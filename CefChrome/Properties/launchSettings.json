@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CefChrome": {
+      "commandName": "Project",
+      "commandLineArgs": "http://localhost"
+    }
+  }
+}
