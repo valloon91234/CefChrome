@@ -1,4 +1,4 @@
-﻿namespace CefChrome
+﻿namespace SharpBrowser
 {
     partial class TitleBarForm
     {

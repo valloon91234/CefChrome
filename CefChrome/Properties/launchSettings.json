@@ -1,8 +1,8 @@
 {
   "profiles": {
-    "CefChrome": {
+    "SharpBrowser": {
       "commandName": "Project",
-      "commandLineArgs": "http://localhost"
+      "commandLineArgs": "https://translate.google.com"
     }
   }
 }

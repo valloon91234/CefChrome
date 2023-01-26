@@ -1,15 +1,13 @@
 using CefSharp.WinForms;
 using CefSharp;
-using System.Runtime;
-using System.Net;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace CefChrome
+namespace SharpBrowser
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
             var args = Environment.GetCommandLineArgs();
@@ -25,7 +23,7 @@ namespace CefChrome
             _ = SetWindowDisplayAffinity(this.Handle, WDA_EXCLUDEFROMCAPTURE);
         }
 
-        private readonly TitleBarForm TitleBarFormInstance = new TitleBarForm();
+        private readonly TitleBarForm TitleBarFormInstance = new();
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -73,10 +71,10 @@ namespace CefChrome
         }
 
         [DllImport("user32.dll")]
-        public static extern uint SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
+        static extern uint SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
 
         const uint WDA_NONE = 0x00000000;
-        const uint WDA_MONITOR = 0x00000001;
+        //const uint WDA_MONITOR = 0x00000001;
         const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
 
         public ChromiumWebBrowser? CefBrowser;
@@ -92,6 +90,8 @@ namespace CefChrome
             CefBrowser.TitleChanged += Browser_TitleChanged;
             this.Controls.Add(CefBrowser);
             CefBrowser.Dock = DockStyle.Fill;
+            CefBrowser.KeyboardHandler = new KeyboardHandler(this);
+            KeyboardHandler.AddHotKey(this, RefreshActiveTab, Keys.F5);
         }
 
         private void Browser_AddressChanged(object? sender, AddressChangedEventArgs e)
@@ -129,6 +129,11 @@ namespace CefChrome
                 CefBrowser!.TitleChanged -= Browser_TitleChanged;
         }
 
+        public void RefreshActiveTab()
+        {
+            CefBrowser!.Load(CefBrowser.Address);
+        }
+
         private void Form1_HelpRequested(object sender, HelpEventArgs hlpevent)
         {
             MoveTitleBarForm();
@@ -139,6 +144,7 @@ namespace CefChrome
         {
             MoveTitleBarForm();
         }
+
     }
 
 }
