@@ -2,6 +2,7 @@ using CefSharp.WinForms;
 using CefSharp;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Globalization;
 
 namespace SharpBrowser
 {
@@ -23,11 +24,33 @@ namespace SharpBrowser
             _ = SetWindowDisplayAffinity(this.Handle, WDA_EXCLUDEFROMCAPTURE);
         }
 
+        [DllImport("User32")]
+        public static extern bool RegisterHotKey(
+            IntPtr hWnd,
+            int id,
+            int fsModifiers,
+            int vk
+        );
+        [DllImport("User32")]
+        public static extern bool UnregisterHotKey(
+            IntPtr hWnd,
+            int id
+        );
+
+        public const int MOD_WIN = 0x8;
+        public const int MOD_SHIFT = 0x4;
+        public const int MOD_CONTROL = 0x2;
+        public const int MOD_ALT = 0x1;
+        public const int WM_HOTKEY = 0x312;
+        public const int WM_DESTROY = 0x0002;
+
         private readonly TitleBarForm TitleBarFormInstance = new();
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            _ = SetWindowDisplayAffinity(TitleBarFormInstance.Handle, WDA_EXCLUDEFROMCAPTURE);
+            CheckBoxH_CheckedChanged();
+            CheckBoxB_CheckedChanged();
+            CheckBoxT_CheckedChanged();
             TitleBarFormInstance.Show();
             TitleBarFormInstance.Visible = false;
             TitleBarFormInstance.Owner = this;
@@ -35,6 +58,34 @@ namespace SharpBrowser
             TitleBarFormInstance.checkBoxH.CheckedChanged += CheckBoxH_CheckedChanged;
             TitleBarFormInstance.checkBoxB.CheckedChanged += CheckBoxB_CheckedChanged;
             TitleBarFormInstance.checkBoxT.CheckedChanged += CheckBoxT_CheckedChanged;
+            if (!RegisterHotKey(this.Handle, 1, MOD_WIN + MOD_ALT, (int)Keys.A))
+                MessageBox.Show("Set hotkey failed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (!RegisterHotKey(this.Handle, 0, MOD_WIN + MOD_ALT, (int)Keys.S))
+                MessageBox.Show("Set hotkey failed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            switch (m.Msg)
+            {
+                case WM_HOTKEY:
+                    switch (m.WParam.ToInt32())
+                    {
+                        case 1:
+                            this.Show();
+                            this.Activate();
+                            break;
+                        case 0:
+                            this.Hide();
+                            break;
+                    }
+                    break;
+                case WM_DESTROY:
+                    UnregisterHotKey(this.Handle, 1);
+                    UnregisterHotKey(this.Handle, 0);
+                    break;
+            }
+            base.WndProc(ref m);
         }
 
         private void MoveTitleBarForm()
@@ -47,9 +98,9 @@ namespace SharpBrowser
             MoveTitleBarForm();
         }
 
-        private void CheckBoxH_CheckedChanged(object? sender, EventArgs e)
+        private void CheckBoxH_CheckedChanged(object? sender = null, EventArgs? e = null)
         {
-            if (((CheckBox)sender!).Checked)
+            if (TitleBarFormInstance.checkBoxH.Checked)
             {
                 _ = SetWindowDisplayAffinity(this.Handle, WDA_EXCLUDEFROMCAPTURE);
             }
@@ -59,15 +110,24 @@ namespace SharpBrowser
             }
         }
 
-        private void CheckBoxB_CheckedChanged(object? sender, EventArgs e)
+        private void CheckBoxB_CheckedChanged(object? sender = null, EventArgs? e = null)
         {
-            this.ShowInTaskbar = !((CheckBox)sender!).Checked;
-            CheckBoxH_CheckedChanged(sender, e);
+            if (TitleBarFormInstance.checkBoxB.Checked)
+            {
+                this.ShowInTaskbar = false;
+                this.MinimizeBox = false;
+            }
+            else
+            {
+                this.ShowInTaskbar = true;
+                this.MinimizeBox = true;
+            }
+            CheckBoxH_CheckedChanged();
         }
 
-        private void CheckBoxT_CheckedChanged(object? sender, EventArgs e)
+        private void CheckBoxT_CheckedChanged(object? sender = null, EventArgs? e = null)
         {
-            this.TopMost = ((CheckBox)sender!).Checked;
+            this.TopMost = TitleBarFormInstance.checkBoxT.Checked;
         }
 
         [DllImport("user32.dll")]
@@ -86,7 +146,7 @@ namespace SharpBrowser
                 settings.CefCommandLineArgs.Add("proxy-server", proxy);
             Cef.Initialize(settings);
             CefBrowser = new ChromiumWebBrowser(url);
-            CefBrowser.AddressChanged += Browser_AddressChanged;
+            //CefBrowser.AddressChanged += Browser_AddressChanged;
             CefBrowser.TitleChanged += Browser_TitleChanged;
             this.Controls.Add(CefBrowser);
             CefBrowser.Dock = DockStyle.Fill;
@@ -122,8 +182,9 @@ namespace SharpBrowser
             Invoke(new Action(() =>
             {
                 Debug.WriteLine($"Title changed: {e.Title}");
-                if (this.Text.StartsWith("https://") || this.Text.StartsWith("http://"))
-                    this.Text = $"{e.Title} - Google Chrome - {this.Text}";
+                //if (this.Text.StartsWith("https://") || this.Text.StartsWith("http://"))
+                //this.Text = $"{e.Title} - Google Chrome - {this.Text}";
+                this.Text = $"{e.Title} - Google Chrome";
             }));
             if (e.Title == "Google Translate")
                 CefBrowser!.TitleChanged -= Browser_TitleChanged;

@@ -48,6 +48,8 @@
             // checkBoxB
             // 
             this.checkBoxB.AutoSize = true;
+            this.checkBoxB.Checked = true;
+            this.checkBoxB.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBoxB.Location = new System.Drawing.Point(47, 3);
             this.checkBoxB.Name = "checkBoxB";
             this.checkBoxB.Size = new System.Drawing.Size(33, 19);
