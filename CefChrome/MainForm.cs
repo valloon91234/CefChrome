@@ -3,6 +3,8 @@ using CefSharp;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Globalization;
+using System.Reflection.Metadata;
+using CefSharp.DevTools.Debugger;
 
 namespace SharpBrowser
 {
@@ -21,7 +23,6 @@ namespace SharpBrowser
                     proxy = args[2];
             }
             InitBrowser(url, proxy);
-            _ = SetWindowDisplayAffinity(this.Handle, WDA_EXCLUDEFROMCAPTURE);
         }
 
         [DllImport("User32")]
@@ -43,6 +44,8 @@ namespace SharpBrowser
         public const int MOD_ALT = 0x1;
         public const int WM_HOTKEY = 0x312;
         public const int WM_DESTROY = 0x0002;
+        public const int WM_SYSCOMMAND = 0x0112;
+        public const int SC_MINIMIZE = 0xf020;
 
         private readonly TitleBarForm TitleBarFormInstance = new();
 
@@ -68,12 +71,22 @@ namespace SharpBrowser
         {
             switch (m.Msg)
             {
+                case WM_SYSCOMMAND:
+                    if (TitleBarFormInstance.checkBoxB.Checked && m.WParam.ToInt32() == SC_MINIMIZE)
+                    {
+                        m.Result = IntPtr.Zero;
+                        this.Hide();
+                        return;
+                    }
+                    break;
                 case WM_HOTKEY:
                     switch (m.WParam.ToInt32())
                     {
                         case 1:
                             this.Show();
                             this.Activate();
+                            TitleBarFormInstance.checkBoxH.Checked = false;
+                            TitleBarFormInstance.checkBoxH.Checked = true;
                             break;
                         case 0:
                             this.Hide();
@@ -112,16 +125,7 @@ namespace SharpBrowser
 
         private void CheckBoxB_CheckedChanged(object? sender = null, EventArgs? e = null)
         {
-            if (TitleBarFormInstance.checkBoxB.Checked)
-            {
-                this.ShowInTaskbar = false;
-                this.MinimizeBox = false;
-            }
-            else
-            {
-                this.ShowInTaskbar = true;
-                this.MinimizeBox = true;
-            }
+            this.ShowInTaskbar = !TitleBarFormInstance.checkBoxB.Checked;
             CheckBoxH_CheckedChanged();
         }
 
@@ -198,6 +202,8 @@ namespace SharpBrowser
         private void Form1_HelpRequested(object sender, HelpEventArgs hlpevent)
         {
             MoveTitleBarForm();
+            _ = SetWindowDisplayAffinity(TitleBarFormInstance.Handle, WDA_NONE);
+            _ = SetWindowDisplayAffinity(TitleBarFormInstance.Handle, WDA_EXCLUDEFROMCAPTURE);
             TitleBarFormInstance.Visible = !TitleBarFormInstance.Visible;
         }
 
